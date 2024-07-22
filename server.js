@@ -27,8 +27,14 @@ mongoose.connect(uri, {
     useUnifiedTopology: true,
 })
 
-app.use(cors());
+var corsOptions = {
+  origin: '*', // 你的前端域名
+  methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
 
+app.use(cors(corsOptions));
 
 app.use('/api/users', userRouter);
 
