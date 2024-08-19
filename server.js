@@ -17,13 +17,21 @@ dotenv.config();
 
 // 设置文件存储路径
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, '/var/www/uploads');
-    },
-    filename: (req, file, cb) => {
-      cb(null, file.originalname);
+  destination: (req, file, cb) => {
+    if (file.fieldname === 'file') {
+      cb(null, '/var/www/uploads'); // Excel文件保存路径
+    } else if (file.fieldname === 'resume') {
+      cb(null, '/var/www/uploads/documents'); // 简历文件保存路径
     }
-  });
+  },
+  filename: (req, file, cb) => {
+    // 处理中文文件名
+    const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    const prefix = req.body.prefix || 'unknown'; // 从请求中获取前缀
+    const finalName = `${prefix}_${originalName}`;
+    cb(null, finalName);
+  }
+});
   
 const upload = multer({ storage: storage });
 
@@ -54,11 +62,11 @@ app.use(cors());
 app.use('/api/users', userRouter);
 
 // 处理文件上传的POST请求，路径包含 /api/ 前缀
-app.post('/api/upload', upload.single('file'), (req, res) => {
+app.post('/api/upload', upload.fields([{ name: 'file' }, { name: 'resume' }]), (req, res) => {
   try {
-      res.status(200).send({ message: "File uploaded successfully" });
+    res.status(200).send({ message: "Files uploaded successfully" });
   } catch (error) {
-      res.status(500).send({ error: "Failed to upload file" });
+    res.status(500).send({ error: "Failed to upload files" });
   }
 });
 
@@ -74,7 +82,7 @@ app.get('/api/files', (req, res) => {
   });
   
   app.get('/api/files/download-all', (req, res) => {
-    const zipFilename = 'files.zip';
+    const zipFilename = '团队信息与简历.zip';
     const output = fs.createWriteStream(path.join(__dirname, zipFilename));
     const archive = archiver('zip', {
       zlib: { level: 9 } // 设置压缩级别
@@ -85,8 +93,9 @@ app.get('/api/files', (req, res) => {
         if (err) {
           console.error('Error downloading zip:', err);
           res.status(500).json({ error: 'Error downloading zip' });
+        } else {
+          fs.unlinkSync(path.join(__dirname, zipFilename)); // 下载后删除临时压缩文件
         }
-        fs.unlinkSync(path.join(__dirname, zipFilename)); // 下载后删除临时压缩文件
       });
     });
   
@@ -97,23 +106,13 @@ app.get('/api/files', (req, res) => {
   
     archive.pipe(output);
   
-    fs.readdir(uploadDir, (err, files) => {
-      if (err) {
-        console.error('Error reading files:', err);
-        res.status(500).json({ error: 'Unable to read files' });
-        return;
-      }
+    // 将整个 /var/www/uploads 目录添加到压缩包
+    archive.directory('/var/www/uploads/', false);
   
-      files.forEach((file) => {
-        const filePath = path.join(uploadDir, file);
-        archive.file(filePath, { name: file });
-      });
-  
-      archive.finalize();
-    });
+    archive.finalize();
   });
-
-const port = process.env.PORT || 5000
-app.listen(port, ()=>{
+  
+  const port = process.env.PORT || 5000;
+  app.listen(port, () => {
     console.log(`Serve at http://localhost:${port}`);
-});
+  });
