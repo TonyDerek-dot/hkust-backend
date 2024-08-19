@@ -18,17 +18,14 @@ dotenv.config();
 // 设置文件存储路径
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    if (file.fieldname === 'file') {
-      cb(null, '/var/www/uploads'); // Excel文件保存路径
-    } else if (file.fieldname === 'resume') {
-      cb(null, '/var/www/uploads/documents'); // 简历文件保存路径
-    }
+    const destPath = file.fieldname === 'file' ? '/var/www/uploads' : '/var/www/uploads/documents';
+    cb(null, destPath);
   },
   filename: (req, file, cb) => {
-    // 处理中文文件名
-    const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-    const prefix = req.body.prefix || 'unknown'; // 从请求中获取前缀
-    const finalName = `${prefix}_${originalName}`;
+    // 使用 decodeURIComponent 解码 URL 编码的文件名
+    const decodedOriginalName = decodeURIComponent(file.originalname);
+    const prefix = req.body.prefix || 'unknown';
+    const finalName = `${prefix}_${decodedOriginalName}`;
     cb(null, finalName);
   }
 });
