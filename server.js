@@ -3,7 +3,6 @@ import cors from 'cors';
 import mongoose from "mongoose";
 import dotenv from 'dotenv';
 import userRouter from './routers/userRouter.js';
-import express from 'express';
 import multer from 'multer';
 import path from 'path';
 
