@@ -117,14 +117,8 @@ app.get('/api/files', (req, res) => {
   
     archive.finalize();
   });
-<<<<<<< HEAD
-
-const port = process.env.PORT || 5000
-app.listen(port, '0.0.0.0', ()=>{
-=======
   
   const port = process.env.PORT || 5000;
   app.listen(port, () => {
->>>>>>> c722fa4104f6aee871a547614c42677ac41fb0f3
     console.log(`Serve at http://localhost:${port}`);
   });
