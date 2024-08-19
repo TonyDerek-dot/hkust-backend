@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import userRouter from './routers/userRouter.js';
 import multer from 'multer';
 import path from 'path';
+import archiver from 'archiver';
 
 dotenv.config();
 
@@ -60,6 +61,57 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
       res.status(500).send({ error: "Failed to upload file" });
   }
 });
+
+const uploadDir = '/var/www/uploads';
+
+app.get('/api/files', (req, res) => {
+    fs.readdir(uploadDir, (err, files) => {
+      if (err) {
+        return res.status(500).json({ error: 'Unable to scan directory' });
+      }
+      res.json(files);
+    });
+  });
+  
+  app.get('/api/files/download-all', (req, res) => {
+    const zipFilename = 'files.zip';
+    const output = fs.createWriteStream(path.join(__dirname, zipFilename));
+    const archive = archiver('zip', {
+      zlib: { level: 9 } // 设置压缩级别
+    });
+  
+    output.on('close', () => {
+      res.download(path.join(__dirname, zipFilename), zipFilename, (err) => {
+        if (err) {
+          console.error('Error downloading zip:', err);
+          res.status(500).json({ error: 'Error downloading zip' });
+        }
+        fs.unlinkSync(path.join(__dirname, zipFilename)); // 下载后删除临时压缩文件
+      });
+    });
+  
+    archive.on('error', (err) => {
+      console.error('Error creating zip:', err);
+      res.status(500).json({ error: 'Error creating zip' });
+    });
+  
+    archive.pipe(output);
+  
+    fs.readdir(uploadDir, (err, files) => {
+      if (err) {
+        console.error('Error reading files:', err);
+        res.status(500).json({ error: 'Unable to read files' });
+        return;
+      }
+  
+      files.forEach((file) => {
+        const filePath = path.join(uploadDir, file);
+        archive.file(filePath, { name: file });
+      });
+  
+      archive.finalize();
+    });
+  });
 
 const port = process.env.PORT || 5000
 app.listen(port, '0.0.0.0', ()=>{
