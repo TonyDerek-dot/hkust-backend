@@ -34,6 +34,10 @@ const upload = multer({ storage: storage });
 
 const app = express();
 
+
+app.use(express.json());
+app.use(express.urlencoded({extended:true}));
+
 // app.use('/api/users', userRouter)// this is to initialize the users in database
 
 app.get('/', (req, res)=>{
@@ -48,9 +52,6 @@ app.post('/api/registration/toggle', (req, res) => {
   registrationOpen = req.body.isOpen;
   res.json({ isOpen: registrationOpen });
 });
-
-app.use(express.json());
-app.use(express.urlencoded({extended:true}));
 
 // 从环境变量中读取 MongoDB 连接 URI
 const uri = process.env.MONGODB_URI;
