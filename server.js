@@ -14,19 +14,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 dotenv.config();
+let registrationOpen = false;  // 默认为关闭状态
 
 // 设置文件存储路径
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const destPath = file.fieldname === 'file' ? '/var/www/uploads' : '/var/www/uploads/documents';
+    const destPath = file.fieldname === 'file' 
+      ? path.join('/var/www/uploads') 
+      : path.join('/var/www/uploads/documents');
     cb(null, destPath);
   },
   filename: (req, file, cb) => {
-    // 使用 decodeURIComponent 解码 URL 编码的文件名
     const decodedOriginalName = decodeURIComponent(file.originalname);
-    const prefix = req.body.prefix || 'unknown';
-    const finalName = `${prefix}_${decodedOriginalName}`;
-    cb(null, finalName);
+    cb(null, decodedOriginalName);
   }
 });
   
@@ -40,6 +40,14 @@ app.get('/', (req, res)=>{
     res.send('Server is ready');
 });
 
+app.get('/api/registration/status', (req, res) => {
+  res.json({ isOpen: registrationOpen });
+});
+
+app.post('/api/registration/toggle', (req, res) => {
+  registrationOpen = req.body.isOpen;
+  res.json({ isOpen: registrationOpen });
+});
 
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
