@@ -64,22 +64,25 @@ app.use('/api/users', userRouter);
 // 处理文件上传的POST请求，路径包含 /api/ 前缀
 app.post('/api/upload', upload.fields([{ name: 'file' }, { name: 'resume' }]), async (req, res) => {
   try {
-    // 处理文件上传逻辑
-    const files = req.files;
-    const githubApiUrl = 'https://api.github.com/repos/TonyDerek-dot/hkust-quant/contents/';
     const githubToken = process.env.GITHUB_TOKEN;
+    const githubApiUrl = 'https://api.github.com/repos/TonyDerek-dot/hkust-quant/contents/';
 
-    for (const fieldName in files) {
-      const file = files[fieldName][0];
+    if (!githubToken) {
+      throw new Error('GitHub Token is missing');
+    }
+
+    for (const fieldName in req.files) {
+      const file = req.files[fieldName][0];
       const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
-      const fileName = `${timestamp}_${file.originalname}`;
+      const rawFileName = `${timestamp}_${file.originalname}`;
+      const encodedFileName = encodeURIComponent(rawFileName);  // 对文件名进行URI编码
 
-      const fileContent = file.buffer.toString('base64'); // 将文件内容转换为Base64
+      const fileContent = file.buffer.toString('base64');  // 将文件内容转换为Base64
 
       // GitHub API的详细信息
-      const url = `${githubApiUrl}${fileName}`;
+      const url = `${githubApiUrl}${encodedFileName}`;
       const data = {
-        message: `Add ${fileName}`,
+        message: `Add ${rawFileName}`,
         content: fileContent,
         branch: 'main',
       };
@@ -92,7 +95,7 @@ app.post('/api/upload', upload.fields([{ name: 'file' }, { name: 'resume' }]), a
         },
       });
 
-      console.log(`File uploaded successfully to GitHub: ${fileName}`, response.data);
+      console.log(`File uploaded successfully to GitHub: ${rawFileName}`, response.data);
     }
 
     res.status(200).send({ message: "Files uploaded successfully to GitHub" });
