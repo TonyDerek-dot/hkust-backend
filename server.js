@@ -78,9 +78,9 @@ app.post('/api/upload', upload.fields([{ name: 'file' }, { name: 'resume' }]), a
       const fileContent = file.buffer.toString('base64'); // 将文件内容转换为Base64
 
       // GitHub API的URL需要进行编码
-      const url = `${githubApiUrl}${(rawFileName)}`; // 对URL部分进行编码
+      const url = `${githubApiUrl}${encodeURIComponent(rawFileName)}`; // 对URL部分进行编码
       const data = {
-        message: `Add ${encodeURIComponent(rawFileName)}`, // 在commit消息中使用编码后的文件名
+        message: `Add ${rawFileName}`, // 在commit消息中使用编码后的文件名
         content: fileContent,
         branch: 'main',
       };
