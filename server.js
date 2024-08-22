@@ -14,26 +14,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 dotenv.config();
-let registrationOpen = false;  // 默认为关闭状态
-
-// 设置文件存储路径
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const destPath = file.fieldname === 'file' 
-      ? path.join('/var/www/uploads') 
-      : path.join('/var/www/uploads/documents');
-    cb(null, destPath);
-  },
-  filename: (req, file, cb) => {
-    const decodedOriginalName = decodeURIComponent(file.originalname);
-    cb(null, decodedOriginalName);
-  }
-});
-  
-const upload = multer({ storage: storage });
-
 const app = express();
 
+let registrationOpen = false;  // 默认为关闭状态
+
+// 配置multer，不再存储文件，而是直接处理
+const storage = multer.memoryStorage(); // 使用内存存储文件
+const upload = multer({ storage: storage });
 
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
@@ -73,12 +60,46 @@ app.use(cors(corsOptions));
 
 app.use('/api/users', userRouter);
 
+const readFile = util.promisify(fs.readFile);
+
 // 处理文件上传的POST请求，路径包含 /api/ 前缀
-app.post('/api/upload', upload.fields([{ name: 'file' }, { name: 'resume' }]), (req, res) => {
+app.post('/api/upload', upload.fields([{ name: 'file' }, { name: 'resume' }]), async (req, res) => {
   try {
-    res.status(200).send({ message: "Files uploaded successfully" });
+    // 处理文件上传逻辑
+    const files = req.files;
+    const githubApiUrl = 'https://api.github.com/repos/TonyDerek-dot/hkust-quant/contents/';
+    const githubToken = process.env.GITHUB_TOKEN;
+
+    for (const fieldName in files) {
+      const file = files[fieldName][0];
+      const timestamp = new Date().toISOString().replace(/[-:.]/g, "");
+      const fileName = `${timestamp}_${file.originalname}`;
+
+      const fileContent = file.buffer.toString('base64'); // 将文件内容转换为Base64
+
+      // GitHub API的详细信息
+      const url = `${githubApiUrl}${fileName}`;
+      const data = {
+        message: `Add ${fileName}`,
+        content: fileContent,
+        branch: 'main',
+      };
+
+      // 上传文件到GitHub
+      const response = await axios.put(url, data, {
+        headers: {
+          Authorization: `Bearer ${githubToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log(`File uploaded successfully to GitHub: ${fileName}`, response.data);
+    }
+
+    res.status(200).send({ message: "Files uploaded successfully to GitHub" });
   } catch (error) {
-    res.status(500).send({ error: "Failed to upload files" });
+    console.error("File upload to GitHub failed:", error);
+    res.status(500).send({ error: "Failed to upload files to GitHub" });
   }
 });
 
