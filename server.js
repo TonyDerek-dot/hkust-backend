@@ -60,8 +60,6 @@ app.use(cors(corsOptions));
 
 app.use('/api/users', userRouter);
 
-const readFile = util.promisify(fs.readFile);
-
 // 处理文件上传的POST请求，路径包含 /api/ 前缀
 app.post('/api/upload', upload.fields([{ name: 'file' }, { name: 'resume' }]), async (req, res) => {
   try {
