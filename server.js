@@ -75,12 +75,12 @@ app.post('/api/upload', upload.fields([{ name: 'file' }, { name: 'resume' }]), a
       const file = req.files[fieldName][0];
       const rawFileName = file.originalname; // 直接使用前端传递过来的文件名
 
-      const fileContent = file.buffer.toString('base64');  // 将文件内容转换为Base64
+      const fileContent = file.buffer.toString('base64'); // 将文件内容转换为Base64
 
-      // GitHub API的详细信息
-      const url = `${githubApiUrl}${rawFileName}`; // 使用原始文件名构建GitHub URL
+      // 构建GitHub API的URL
+      const url = `${githubApiUrl}${encodeURIComponent(rawFileName)}`; // 对文件名进行URL编码，确保特殊字符正确传递
       const data = {
-        message: `Add ${rawFileName}`,
+        message: `Add ${rawFileName}`, // 使用原始文件名作为commit message
         content: fileContent,
         branch: 'main',
       };
