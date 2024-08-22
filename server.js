@@ -71,37 +71,46 @@ app.post('/api/upload', upload.fields([{ name: 'file' }, { name: 'resume' }]), a
       throw new Error('GitHub Token is missing');
     }
 
+    // 打印调试信息：接收到的文件字段
+    console.log('Received files:', Object.keys(req.files));
+
     for (const fieldName in req.files) {
       const file = req.files[fieldName][0];
       const rawFileName = file.originalname; // 使用前端传递过来的原始文件名
-    
+      console.log('Received rawFileName:', rawFileName); // 打印原始文件名
+
       const fileContent = file.buffer.toString('base64'); // 将文件内容转换为Base64
-    
-      // 使用Buffer处理文件名，确保其为UTF-8格式
-      const encodedFileName = Buffer.from(rawFileName, 'utf-8').toString();
-    
+      console.log('File content (Base64, first 100 chars):', fileContent.substring(0, 100)); // 打印文件内容的前100个字符
+
       // GitHub API的URL需要进行编码
-      const url = `${githubApiUrl}${encodeURIComponent(encodedFileName)}`;
-    
-      // 使用Buffer处理commit message中的中文字符
-      const encodedMessage = Buffer.from(`Add ${rawFileName}`, 'utf-8').toString();
-    
+      const url = `${githubApiUrl}${encodeURIComponent(rawFileName)}`; // 对URL部分进行编码
+      console.log('Encoded GitHub URL:', url); // 打印编码后的GitHub URL
+
+      // 使用UTF-8编码的提交信息
+      const encodedMessage = `Add ${rawFileName}`;
+      console.log('Commit message:', encodedMessage); // 打印提交信息
+
       const data = {
-        message: encodedMessage, // 使用Buffer处理后的commit message
+        message: encodedMessage,
         content: fileContent,
         branch: 'main',
       };
-    
+
       // 上传文件到GitHub
-      const response = await axios.put(url, data, {
-        headers: {
-          Authorization: `Bearer ${githubToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-    
-      console.log(`File uploaded successfully to GitHub: ${rawFileName}`, response.data);
-    }    
+      try {
+        const response = await axios.put(url, data, {
+          headers: {
+            Authorization: `Bearer ${githubToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        console.log(`File uploaded successfully to GitHub: ${rawFileName}`, response.data);
+      } catch (uploadError) {
+        console.error('Failed to upload file to GitHub:', uploadError.response ? uploadError.response.data : uploadError.message);
+        throw uploadError;
+      }
+    }
 
     res.status(200).send({ message: "Files uploaded successfully to GitHub" });
   } catch (error) {
