@@ -7,6 +7,7 @@ import multer from 'multer';
 import path from 'path';
 import archiver from 'archiver';
 import fs from 'fs';
+import axios from 'axios';
 
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
