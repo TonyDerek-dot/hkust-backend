@@ -79,8 +79,12 @@ app.post('/api/upload', upload.fields([{ name: 'file' }, { name: 'resume' }]), a
 
       // GitHub API的URL需要进行编码
       const url = `${githubApiUrl}${encodeURIComponent(rawFileName)}`; // 对URL部分进行编码
+
+      // 使用Buffer处理commit message中的中文字符
+      const encodedMessage = Buffer.from(`Add ${rawFileName}`).toString('utf-8');
+
       const data = {
-        message: `Add ${rawFileName}`, // 在commit消息中使用编码后的文件名
+        message: encodedMessage, // 使用Buffer处理后的commit message
         content: fileContent,
         branch: 'main',
       };
