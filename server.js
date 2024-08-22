@@ -84,7 +84,9 @@ app.post('/api/upload', upload.fields([{ name: 'file' }, { name: 'resume' }]), a
       const url = `${githubApiUrl}${rawFileName}`; // 不再编码 URL
       console.log('GitHub URL:', url);
 
-      const commitMessage = `Add ${rawFileName}`;
+      // 对文件名进行解码，以恢复原始文件名
+      const decodedFileName = decodeURIComponent(rawFileName);
+      const commitMessage = `Add ${decodedFileName}`;
       console.log('Commit message:', commitMessage);
 
       const data = {
