@@ -74,21 +74,24 @@ app.post('/api/upload', upload.fields([{ name: 'file' }, { name: 'resume' }]), a
     for (const fieldName in req.files) {
       const file = req.files[fieldName][0];
       const rawFileName = file.originalname; // 使用前端传递过来的原始文件名
-
+    
       const fileContent = file.buffer.toString('base64'); // 将文件内容转换为Base64
-
+    
+      // 使用Buffer处理文件名，确保其为UTF-8格式
+      const encodedFileName = Buffer.from(rawFileName, 'utf-8').toString();
+    
       // GitHub API的URL需要进行编码
-      const url = `${githubApiUrl}${encodeURIComponent(rawFileName)}`; // 对URL部分进行编码
-
+      const url = `${githubApiUrl}${encodeURIComponent(encodedFileName)}`;
+    
       // 使用Buffer处理commit message中的中文字符
-      const encodedMessage = Buffer.from(`Add ${rawFileName}`).toString('utf-8');
-
+      const encodedMessage = Buffer.from(`Add ${rawFileName}`, 'utf-8').toString();
+    
       const data = {
         message: encodedMessage, // 使用Buffer处理后的commit message
         content: fileContent,
         branch: 'main',
       };
-
+    
       // 上传文件到GitHub
       const response = await axios.put(url, data, {
         headers: {
@@ -96,9 +99,9 @@ app.post('/api/upload', upload.fields([{ name: 'file' }, { name: 'resume' }]), a
           'Content-Type': 'application/json',
         },
       });
-
+    
       console.log(`File uploaded successfully to GitHub: ${rawFileName}`, response.data);
-    }
+    }    
 
     res.status(200).send({ message: "Files uploaded successfully to GitHub" });
   } catch (error) {
