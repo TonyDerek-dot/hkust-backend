@@ -71,32 +71,28 @@ app.post('/api/upload', upload.fields([{ name: 'file' }, { name: 'resume' }]), a
       throw new Error('GitHub Token is missing');
     }
 
-    // 打印调试信息：接收到的文件字段
     console.log('Received files:', Object.keys(req.files));
 
     for (const fieldName in req.files) {
       const file = req.files[fieldName][0];
-      const rawFileName = file.originalname; // 使用前端传递过来的原始文件名
-      console.log('Received rawFileName:', rawFileName); // 打印原始文件名
+      const rawFileName = file.originalname; // 直接使用接收到的文件名
+      console.log('Received rawFileName:', rawFileName);
 
-      const fileContent = file.buffer.toString('base64'); // 将文件内容转换为Base64
-      console.log('File content (Base64, first 100 chars):', fileContent.substring(0, 100)); // 打印文件内容的前100个字符
+      const fileContent = file.buffer.toString('base64');
+      console.log('File content (Base64, first 100 chars):', fileContent.substring(0, 100));
 
-      // GitHub API的URL需要进行编码
-      const url = `${githubApiUrl}${encodeURIComponent(rawFileName)}`; // 对URL部分进行编码
-      console.log('Encoded GitHub URL:', url); // 打印编码后的GitHub URL
+      const url = `${githubApiUrl}${rawFileName}`; // 不再编码 URL
+      console.log('GitHub URL:', url);
 
-      // 使用UTF-8编码的提交信息
-      const encodedMessage = `Add ${rawFileName}`;
-      console.log('Commit message:', encodedMessage); // 打印提交信息
+      const commitMessage = `Add ${rawFileName}`;
+      console.log('Commit message:', commitMessage);
 
       const data = {
-        message: encodedMessage,
+        message: commitMessage,
         content: fileContent,
         branch: 'main',
       };
 
-      // 上传文件到GitHub
       try {
         const response = await axios.put(url, data, {
           headers: {
