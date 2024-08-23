@@ -17,7 +17,7 @@ const __dirname = dirname(__filename);
 dotenv.config();
 const app = express();
 
-let registrationOpen = false;  // 默认为关闭状态
+const filePath = '/home/admin/registration_status.txt';
 
 // 配置multer，不再存储文件，而是直接处理
 const storage = multer.memoryStorage(); // 使用内存存储文件
@@ -33,12 +33,25 @@ app.get('/', (req, res)=>{
 });
 
 app.get('/api/registration/status', (req, res) => {
-  res.json({ isOpen: registrationOpen });
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) {
+      console.error('Error reading status file:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+    const isOpen = data.trim() === 'true';
+    res.json({ isOpen });
+  });
 });
 
 app.post('/api/registration/toggle', (req, res) => {
-  registrationOpen = req.body.isOpen;
-  res.json({ isOpen: registrationOpen });
+  const newStatus = req.body.isOpen ? 'true' : 'false';
+  fs.writeFile(filePath, newStatus, (err) => {
+    if (err) {
+      console.error('Error writing status file:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+    res.json({ isOpen: req.body.isOpen });
+  });
 });
 
 // 从环境变量中读取 MongoDB 连接 URI
@@ -65,7 +78,7 @@ app.use('/api/users', userRouter);
 app.post('/api/upload', upload.any(), async (req, res) => {
   try {
     const githubToken = process.env.GITHUB_TOKEN;
-    const githubApiUrl = 'https://api.github.com/repos/TonyDerek-dot/hkust-quant/contents/';
+    const githubApiUrl = 'https://api.github.com/repos/SiyuanLi-Sven/ustquant-competition-data/contents/';
 
     if (!githubToken) {
       throw new Error('GitHub Token is missing');
