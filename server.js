@@ -29,9 +29,9 @@ const storage = multer.diskStorage({
       }
   },
   filename: (req, file, cb) => {
-      const decodedFileName = decodeURIComponent(file.originalname); // 解码文件名
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      cb(null, decodedFileName + '-' + uniqueSuffix);
+      // 直接使用解码后的文件名，不添加任何后缀
+      const decodedFileName = decodeURIComponent(file.originalname);
+      cb(null, decodedFileName);
   }
 });
 
