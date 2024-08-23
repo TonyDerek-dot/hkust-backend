@@ -62,7 +62,7 @@ app.use(cors(corsOptions));
 app.use('/api/users', userRouter);
 
 // 处理文件上传的POST请求，路径包含 /api/ 前缀
-app.post('/api/upload', upload.fields([{ name: 'file' }, { name: 'resume' }]), async (req, res) => {
+app.post('/api/upload', upload.any(), async (req, res) => {
   try {
     const githubToken = process.env.GITHUB_TOKEN;
     const githubApiUrl = 'https://api.github.com/repos/TonyDerek-dot/hkust-quant/contents/';
@@ -71,10 +71,9 @@ app.post('/api/upload', upload.fields([{ name: 'file' }, { name: 'resume' }]), a
       throw new Error('GitHub Token is missing');
     }
 
-    console.log('Received files:', Object.keys(req.files));
+    console.log('Received files:', req.files.map(file => file.originalname));
 
-    for (const fieldName in req.files) {
-      const file = req.files[fieldName][0];
+    for (const file of req.files) {
       const rawFileName = file.originalname; // 直接使用接收到的文件名
       console.log('Received rawFileName:', rawFileName);
 
