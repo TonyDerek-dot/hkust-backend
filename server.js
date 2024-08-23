@@ -22,17 +22,16 @@ const filePath = '/home/admin/registration_status.txt';
 // 定义存储路径和文件名
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-      // 根据文件类型选择存储路径
-      if (file.fieldname === 'resume') {
+      if (file.fieldname.startsWith('resume')) {
           cb(null, '/var/www/uploads/documents');
       } else {
           cb(null, '/var/www/uploads');
       }
   },
   filename: (req, file, cb) => {
-      // 生成文件名，避免文件名冲突，这里可以根据需要自定义
+      const decodedFileName = decodeURIComponent(file.originalname); // 解码文件名
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      cb(null, file.originalname + '-' + uniqueSuffix);
+      cb(null, decodedFileName + '-' + uniqueSuffix);
   }
 });
 
