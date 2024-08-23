@@ -90,25 +90,16 @@ app.use(cors(corsOptions));
 app.use('/api/users', userRouter);
 
 // 处理文件上传的POST请求，路径包含 /api/ 前缀
-app.post('/api/upload', upload.fields([{ name: 'resume', maxCount: 1 }, { name: 'other', maxCount: 1 }]), async (req, res) => {
+app.post('/api/upload', upload.any(), async (req, res) => {
   try {
-      // Log the saved files for verification
-      console.log('Saved files:', req.files.map(file => {
-          return {
-              fieldname: file.fieldname,
-              originalname: file.originalname,
-              filename: file.filename,
-              path: file.path
-          };
-      }));
-
-      // Respond with success message
+      console.log('Saved files:', req.files);
       res.status(200).send({ message: "Files uploaded successfully to local storage." });
   } catch (error) {
       console.error("Local file upload failed:", error);
       res.status(500).send({ error: "Failed to upload files to local storage" });
   }
 });
+
 
 const uploadDir = '/var/www/uploads';
 
