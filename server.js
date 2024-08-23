@@ -19,8 +19,23 @@ const app = express();
 
 const filePath = '/home/admin/registration_status.txt';
 
-// 配置multer，不再存储文件，而是直接处理
-const storage = multer.memoryStorage(); // 使用内存存储文件
+// 定义存储路径和文件名
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+      // 根据文件类型选择存储路径
+      if (file.fieldname === 'resume') {
+          cb(null, '/var/www/uploads/documents');
+      } else {
+          cb(null, '/var/www/uploads');
+      }
+  },
+  filename: (req, file, cb) => {
+      // 生成文件名，避免文件名冲突，这里可以根据需要自定义
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, file.originalname + '-' + uniqueSuffix);
+  }
+});
+
 const upload = multer({ storage: storage });
 
 app.use(express.json());
@@ -75,57 +90,23 @@ app.use(cors(corsOptions));
 app.use('/api/users', userRouter);
 
 // 处理文件上传的POST请求，路径包含 /api/ 前缀
-app.post('/api/upload', upload.any(), async (req, res) => {
+app.post('/api/upload', upload.fields([{ name: 'resume', maxCount: 1 }, { name: 'other', maxCount: 1 }]), async (req, res) => {
   try {
-    const githubToken = process.env.GITHUB_TOKEN;
-    const githubApiUrl = 'https://api.github.com/repos/SiyuanLi-Sven/ustquant-competition-data/contents/';
+      // Log the saved files for verification
+      console.log('Saved files:', req.files.map(file => {
+          return {
+              fieldname: file.fieldname,
+              originalname: file.originalname,
+              filename: file.filename,
+              path: file.path
+          };
+      }));
 
-    if (!githubToken) {
-      throw new Error('GitHub Token is missing');
-    }
-
-    console.log('Received files:', req.files.map(file => file.originalname));
-
-    for (const file of req.files) {
-      const rawFileName = file.originalname; // 直接使用接收到的文件名
-      console.log('Received rawFileName:', rawFileName);
-
-      const fileContent = file.buffer.toString('base64');
-      console.log('File content (Base64, first 100 chars):', fileContent.substring(0, 100));
-
-      const url = `${githubApiUrl}${rawFileName}`; // 不再编码 URL
-      console.log('GitHub URL:', url);
-
-      // 对文件名进行解码，以恢复原始文件名
-      const decodedFileName = decodeURIComponent(rawFileName);
-      const commitMessage = `Add ${decodedFileName}`;
-      console.log('Commit message:', commitMessage);
-
-      const data = {
-        message: commitMessage,
-        content: fileContent,
-        branch: 'main',
-      };
-
-      try {
-        const response = await axios.put(url, data, {
-          headers: {
-            Authorization: `Bearer ${githubToken}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        console.log(`File uploaded successfully to GitHub: ${rawFileName}`, response.data);
-      } catch (uploadError) {
-        console.error('Failed to upload file to GitHub:', uploadError.response ? uploadError.response.data : uploadError.message);
-        throw uploadError;
-      }
-    }
-
-    res.status(200).send({ message: "Files uploaded successfully to GitHub" });
+      // Respond with success message
+      res.status(200).send({ message: "Files uploaded successfully to local storage." });
   } catch (error) {
-    console.error("File upload to GitHub failed:", error);
-    res.status(500).send({ error: "Failed to upload files to GitHub" });
+      console.error("Local file upload failed:", error);
+      res.status(500).send({ error: "Failed to upload files to local storage" });
   }
 });
 
